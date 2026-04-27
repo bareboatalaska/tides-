@@ -14,6 +14,7 @@
     --cream: #f0ebe0; --cream-dim: #b8b09a; --muted: #6a7d94;
     --card-bg: rgba(18,32,64,0.75); --border: rgba(74,158,218,0.18);
     --border-gold: rgba(200,169,110,0.25);
+    --rising: #5bbf7a; --falling: #e08a4a;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--cream); min-height: 100vh; overflow-x: hidden; }
@@ -28,11 +29,13 @@
   }
   .app { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; padding: 0 0 3rem; }
 
+  /* Header */
   .header { padding: 2rem 1.5rem 1.25rem; border-bottom: 0.5px solid var(--border-gold); margin-bottom: 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; }
   .title-block h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 500; color: var(--cream); line-height: 1.1; }
   .title-block .region { font-size: 11px; color: var(--gold); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; font-weight: 300; }
   .compass { width: 44px; height: 44px; border: 0.5px solid var(--border-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(200,169,110,0.06); flex-shrink: 0; }
 
+  /* Location */
   .loc-section { padding: 0 1.5rem; margin-bottom: 1.25rem; }
   .section-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
   .loc-scroll { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
@@ -41,6 +44,68 @@
   .loc-chip:hover { border-color: var(--tide-blue); color: var(--tide-bright); }
   .loc-chip.active { background: rgba(74,158,218,0.14); border-color: var(--tide-blue); color: var(--tide-bright); font-weight: 500; }
 
+  /* ── CURRENT TIDE PANEL ── */
+  .current-panel {
+    margin: 0 1.5rem 1.25rem;
+    background: var(--card-bg);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 1.1rem 1.25rem;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .current-main { flex: 1; }
+  .current-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px; }
+  .current-height {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    line-height: 1;
+    color: var(--cream);
+  }
+  .current-height span { font-size: 16px; color: var(--muted); font-family: 'DM Sans', sans-serif; margin-left: 2px; }
+  .current-time { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  .current-right { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+  /* Arrow indicator */
+  .tide-arrow {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid;
+    transition: all 0.4s;
+  }
+  .tide-arrow.rising { border-color: var(--rising); background: rgba(91,191,122,0.1); }
+  .tide-arrow.falling { border-color: var(--falling); background: rgba(224,138,74,0.1); }
+  .tide-arrow svg { transition: transform 0.4s; }
+
+  /* Rate of change */
+  .rate-box { text-align: center; }
+  .rate-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .rate-val { font-family: 'Playfair Display', serif; font-size: 18px; margin-top: 2px; }
+  .rate-val.rising { color: var(--rising); }
+  .rate-val.falling { color: var(--falling); }
+  .rate-unit { font-size: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; }
+
+  /* Status strip below current panel — shows next event */
+  .next-event-strip {
+    margin: -0.5rem 1.5rem 1.25rem;
+    background: rgba(74,158,218,0.06);
+    border: 0.5px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 0.5rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .next-event-strip strong { color: var(--cream-dim); }
+
+  /* Date nav */
   .date-nav { margin: 0 1.5rem 1.25rem; display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.9rem 1rem; backdrop-filter: blur(10px); }
   .nav-btn { background: none; border: 0.5px solid var(--border); color: var(--muted); cursor: pointer; width: 32px; height: 32px; border-radius: 50%; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
   .nav-btn:hover:not(:disabled) { border-color: var(--tide-blue); color: var(--tide-bright); }
@@ -49,6 +114,7 @@
   .date-center .dayname { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
   .date-center .datestr { font-family: 'Playfair Display', serif; font-size: 17px; color: var(--cream); margin-top: 2px; }
 
+  /* Chart */
   .chart-card { margin: 0 1.5rem 1.25rem; background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 16px; padding: 1.1rem 1rem 0.75rem; backdrop-filter: blur(10px); }
   .chart-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; flex-wrap: wrap; gap: 4px; }
   .chart-loc { font-size: 13px; font-weight: 500; color: var(--cream); }
@@ -61,6 +127,7 @@
   .status-msg { font-size: 12px; color: var(--muted); }
   .error-msg { font-size: 12px; color: #e07a7a; text-align: center; padding: 0 1rem; line-height: 1.6; }
 
+  /* Tide event cards */
   .events-grid { margin: 0 1.5rem 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .tide-card { background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 14px; padding: 1rem; backdrop-filter: blur(10px); }
   .tide-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; }
@@ -70,6 +137,7 @@
   .tide-ht { font-size: 13px; color: var(--muted); margin-top: 5px; }
   .tide-ht strong { color: var(--cream-dim); font-weight: 500; }
 
+  /* Moon */
   .moon-card { margin: 0 1.5rem 1.25rem; background: var(--card-bg); border: 0.5px solid var(--border-gold); border-radius: 14px; padding: 0.9rem 1rem; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(10px); }
   .moon-glyph { font-size: 26px; line-height: 1; }
   .moon-details { flex: 1; }
@@ -79,17 +147,21 @@
   .range-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
   .range-val { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--cream); margin-top: 1px; }
 
+  /* Conditions */
   .cond-grid { margin: 0 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .cond-card { background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 12px; padding: 0.85rem 0.75rem; text-align: center; backdrop-filter: blur(10px); }
   .cond-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
   .cond-val { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--cream); line-height: 1; }
-  .cond-unit { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
+  /* NOAA badge */
   .noaa-badge { margin: 1.25rem 1.5rem 0; display: flex; align-items: center; gap: 8px; padding: 0.6rem 0.9rem; background: rgba(74,158,218,0.07); border: 0.5px solid rgba(74,158,218,0.2); border-radius: 10px; }
   .noaa-badge span { font-size: 11px; color: var(--muted); }
   .noaa-badge a { color: var(--tide-blue); text-decoration: none; }
   .noaa-badge a:hover { text-decoration: underline; }
   .app-footer { text-align: center; padding: 1.5rem 1.5rem 0; font-size: 11px; color: var(--muted); opacity: 0.5; }
+
+  /* Today-only note */
+  .today-only { margin: 0 1.5rem 1.25rem; font-size: 11px; color: var(--muted); text-align: center; opacity: 0.6; font-style: italic; }
 </style>
 </head>
 <body>
@@ -113,6 +185,9 @@
     <div class="section-label">Port</div>
     <div class="loc-scroll" id="locScroll"></div>
   </div>
+
+  <!-- Current tide level panel (today only) -->
+  <div id="currentTideWrap"></div>
 
   <div class="date-nav">
     <button class="nav-btn" id="prevDay" onclick="changeDay(-1)">&#8592;</button>
@@ -154,10 +229,10 @@
 </div>
 
 <script>
-// Official NOAA station IDs — SE Alaska
+// ── NOAA station IDs — SE Alaska (Ketchikan is index 0 = default) ────────────
 const LOCATIONS = [
-  { name: 'Juneau',      note: 'Gastineau Channel',  id: '9452210' },
   { name: 'Ketchikan',   note: 'Tongass Narrows',    id: '9450460' },
+  { name: 'Juneau',      note: 'Gastineau Channel',  id: '9452210' },
   { name: 'Sitka',       note: 'Sitka Sound',        id: '9451600' },
   { name: 'Petersburg',  note: 'Mitkof Island',      id: '9451439' },
   { name: 'Wrangell',    note: 'Wrangell Narrows',   id: '9451204' },
@@ -167,21 +242,19 @@ const LOCATIONS = [
   { name: 'Metlakatla',  note: 'Annette Island',     id: '9450314' },
 ];
 
-// Stations with live sensor data on NOAA
 const SENSOR_STATIONS = new Set(['9452210','9450460','9451600','9451439']);
-
 const MOON_NAMES  = ['New moon','Waxing crescent','First quarter','Waxing gibbous','Full moon','Waning gibbous','Last quarter','Waning crescent'];
 const MOON_GLYPHS = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
 
 let dayOffset = 0, locIdx = 0, tideChart = null;
 const cache = {};
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
 function getDate(off) { const d = new Date(); d.setDate(d.getDate() + off); return d; }
+function isToday() { return dayOffset === 0; }
 
 function fmtNoaa(d) {
-  return d.getFullYear() +
-    String(d.getMonth()+1).padStart(2,'0') +
-    String(d.getDate()).padStart(2,'0');
+  return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
 }
 
 function fmtDisplay(d) {
@@ -191,19 +264,28 @@ function fmtDisplay(d) {
 }
 
 function getMoonPhase(d) {
-  const knownNew = new Date(2025, 0, 29); // Jan 29 2025 new moon
+  const knownNew = new Date(2025, 0, 29);
   const days = (d - knownNew) / 86400000;
   const idx = Math.floor(((days % 29.53) + 29.53) % 29.53 / (29.53/8)) % 8;
   return { name: MOON_NAMES[idx], glyph: MOON_GLYPHS[idx] };
 }
 
+function fmtTime(t) {
+  const [hStr, mStr] = t.split(' ')[1].split(':');
+  let h = parseInt(hStr);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return h + ':' + mStr + '\u202f' + ampm;
+}
+
+// ── NOAA API ─────────────────────────────────────────────────────────────────
 async function noaaFetch(stationId, dateStr, interval) {
-  const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter' +
-    '?begin_date=' + dateStr + '&end_date=' + dateStr +
-    '&station=' + stationId +
-    '&product=predictions&datum=MLLW&time_zone=lst_ldt' +
-    '&interval=' + interval + '&units=english' +
-    '&application=sea_tides_app&format=json';
+  const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+    + '?begin_date=' + dateStr + '&end_date=' + dateStr
+    + '&station=' + stationId
+    + '&product=predictions&datum=MLLW&time_zone=lst_ldt'
+    + '&interval=' + interval + '&units=english'
+    + '&application=sea_tides_app&format=json';
   const r = await fetch(url);
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const j = await r.json();
@@ -212,11 +294,11 @@ async function noaaFetch(stationId, dateStr, interval) {
 }
 
 async function noaaMetFetch(stationId, dateStr, product) {
-  const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter' +
-    '?begin_date=' + dateStr + '&end_date=' + dateStr +
-    '&station=' + stationId +
-    '&product=' + product + '&time_zone=lst_ldt' +
-    '&units=english&application=sea_tides_app&format=json';
+  const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+    + '?begin_date=' + dateStr + '&end_date=' + dateStr
+    + '&station=' + stationId
+    + '&product=' + product + '&time_zone=lst_ldt'
+    + '&units=english&application=sea_tides_app&format=json';
   const r = await fetch(url);
   const j = await r.json();
   return j.data || null;
@@ -233,15 +315,155 @@ async function loadTides(stationId, dateStr) {
   return cache[key];
 }
 
-function fmtTime(t) {
-  // "2026-04-26 06:42"
-  const [hStr, mStr] = t.split(' ')[1].split(':');
-  let h = parseInt(hStr);
-  const ampm = h >= 12 ? 'pm' : 'am';
-  h = h % 12 || 12;
-  return h + ':' + mStr + '\u202f' + ampm;
+// ── Current tide calculation ──────────────────────────────────────────────────
+// Uses 6-minute interval data for the current hour to get precise reading + rate
+async function loadSixMin(stationId) {
+  const now = new Date();
+  const dateStr = fmtNoaa(now);
+  const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+    + '?begin_date=' + dateStr + '&end_date=' + dateStr
+    + '&station=' + stationId
+    + '&product=predictions&datum=MLLW&time_zone=lst_ldt'
+    + '&interval=6&units=english'
+    + '&application=sea_tides_app&format=json';
+  const r = await fetch(url);
+  const j = await r.json();
+  return j.predictions || [];
 }
 
+function getCurrentFromSixMin(data) {
+  if (!data || data.length === 0) return null;
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  // Find the two readings bracketing current time
+  let before = null, after = null;
+  for (let i = 0; i < data.length; i++) {
+    const t = data[i].t.split(' ')[1];
+    const [hh, mm] = t.split(':').map(Number);
+    const mins = hh * 60 + mm;
+    if (mins <= nowMins) before = { mins, v: parseFloat(data[i].v), idx: i };
+    else if (!after) after = { mins, v: parseFloat(data[i].v), idx: i };
+  }
+
+  if (!before) before = after;
+  if (!after) after = before;
+  if (!before) return null;
+
+  // Interpolate current height
+  let height, rate;
+  if (before === after) {
+    height = before.v;
+    rate = 0;
+  } else {
+    const frac = (nowMins - before.mins) / (after.mins - before.mins);
+    height = before.v + frac * (after.v - before.v);
+    // Rate in ft/hr: change over 6 min interval, scaled to 1 hr
+    rate = (after.v - before.v) / ((after.mins - before.mins) / 60);
+  }
+
+  return {
+    height: height.toFixed(2),
+    rate: rate.toFixed(2),
+    rising: rate >= 0,
+    rateAbs: Math.abs(rate).toFixed(2)
+  };
+}
+
+function findNextEvent(hilo) {
+  if (!hilo || !hilo.length) return null;
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  for (const e of hilo) {
+    const t = e.t.split(' ')[1];
+    const [hh, mm] = t.split(':').map(Number);
+    if (hh * 60 + mm > nowMins) return e;
+  }
+  return null;
+}
+
+// ── Render: Current tide panel ────────────────────────────────────────────────
+async function renderCurrentPanel(stationId, hilo) {
+  const wrap = document.getElementById('currentTideWrap');
+  if (!isToday()) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  // Show loading placeholder
+  wrap.innerHTML = `
+    <div class="current-panel">
+      <div class="current-main">
+        <div class="current-label">Current tide level</div>
+        <div class="current-height" style="opacity:0.3;">–<span>ft</span></div>
+        <div class="current-time" id="currentTime">Calculating…</div>
+      </div>
+      <div class="current-right">
+        <div class="tide-arrow" style="border-color:var(--muted);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+        </div>
+        <div class="rate-box">
+          <div class="rate-label">Rate</div>
+          <div class="rate-val" style="color:var(--muted);">–</div>
+          <div class="rate-unit">ft / hr</div>
+        </div>
+      </div>
+    </div>`;
+
+  try {
+    const sixMin = await loadSixMin(stationId);
+    const cur = getCurrentFromSixMin(sixMin);
+    const nextEvt = findNextEvent(hilo);
+
+    if (!cur) {
+      wrap.innerHTML = '';
+      return;
+    }
+
+    const dirClass = cur.rising ? 'rising' : 'falling';
+    const dirLabel = cur.rising ? 'Rising' : 'Falling';
+    const arrowPath = cur.rising
+      ? 'M12 19V5M5 12l7-7 7 7'   // up arrow
+      : 'M12 5v14M5 12l7 7 7-7';  // down arrow
+    const arrowColor = cur.rising ? 'var(--rising)' : 'var(--falling)';
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    let nextStr = '';
+    if (nextEvt) {
+      const isH = nextEvt.type === 'H';
+      nextStr = `Next: <strong>${isH ? 'High' : 'Low'} ${parseFloat(nextEvt.v).toFixed(1)} ft</strong> at ${fmtTime(nextEvt.t)}`;
+    }
+
+    wrap.innerHTML = `
+      <div class="current-panel">
+        <div class="current-main">
+          <div class="current-label">Current tide level</div>
+          <div class="current-height">${cur.height}<span> ft</span></div>
+          <div class="current-time">As of ${timeStr} · MLLW</div>
+        </div>
+        <div class="current-right">
+          <div class="tide-arrow ${dirClass}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${arrowColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="${arrowPath}"/>
+            </svg>
+          </div>
+          <div class="rate-box">
+            <div class="rate-label">${dirLabel}</div>
+            <div class="rate-val ${dirClass}">${cur.rateAbs}</div>
+            <div class="rate-unit">ft / hr</div>
+          </div>
+        </div>
+      </div>
+      ${nextStr ? `<div class="next-event-strip"><span>⟶ ${nextStr}</span></div>` : ''}`;
+
+  } catch {
+    wrap.innerHTML = '';
+  }
+}
+
+// ── Render: Chart ─────────────────────────────────────────────────────────────
 function renderChart(hourly) {
   const wrap = document.getElementById('chartWrap');
   if (!hourly || !hourly.length) {
@@ -257,14 +479,35 @@ function renderChart(hourly) {
     return h < 12 ? h + 'am' : (h-12) + 'pm';
   });
   const heights = hourly.map(p => parseFloat(p.v));
+
+  // Mark current time on chart if today
+  const nowAnnotation = isToday() ? (() => {
+    const now = new Date();
+    return now.getHours(); // index into hourly array
+  })() : null;
+
   const ctx = document.getElementById('tideChart').getContext('2d');
   if (tideChart) { tideChart.destroy(); tideChart = null; }
   const grad = ctx.createLinearGradient(0,0,0,150);
   grad.addColorStop(0,'rgba(74,158,218,0.28)');
   grad.addColorStop(1,'rgba(74,158,218,0.01)');
+
+  // Build point colors — highlight current hour
+  const pointColors = heights.map((_, i) => i === nowAnnotation ? '#fff' : 'transparent');
+  const pointSizes  = heights.map((_, i) => i === nowAnnotation ? 5 : 0);
+  const pointBorder = heights.map((_, i) => i === nowAnnotation ? '#4a9eda' : 'transparent');
+
   tideChart = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets: [{ data: heights, borderColor: '#4a9eda', backgroundColor: grad, borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#6ab8f0', pointHoverBorderColor: '#fff', pointHoverBorderWidth: 1.5 }] },
+    data: { labels, datasets: [{
+      data: heights,
+      borderColor: '#4a9eda', backgroundColor: grad,
+      borderWidth: 2, tension: 0.4, fill: true,
+      pointRadius: pointSizes, pointBackgroundColor: pointColors,
+      pointBorderColor: pointBorder, pointBorderWidth: 2,
+      pointHoverRadius: 5, pointHoverBackgroundColor: '#6ab8f0',
+      pointHoverBorderColor: '#fff', pointHoverBorderWidth: 1.5,
+    }]},
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,22,40,0.92)', titleColor: '#6a7d94', bodyColor: '#f0ebe0', borderColor: 'rgba(74,158,218,0.3)', borderWidth: 0.5, padding: 10, callbacks: { label: c => c.parsed.y.toFixed(1) + ' ft MLLW', title: l => l[0]||'' } } },
@@ -276,6 +519,7 @@ function renderChart(hourly) {
   });
 }
 
+// ── Render: Tide events ───────────────────────────────────────────────────────
 function renderEvents(hilo) {
   if (!hilo || !hilo.length) {
     document.getElementById('tideEvents').innerHTML = '<div style="grid-column:span 2;text-align:center;padding:1.5rem;font-size:13px;color:var(--muted);">No tide events found.</div>';
@@ -294,6 +538,7 @@ function renderEvents(hilo) {
   }).join('');
 }
 
+// ── Render: Moon ──────────────────────────────────────────────────────────────
 function renderMoon(d, hilo) {
   const mp = getMoonPhase(d);
   let range = '–';
@@ -307,6 +552,7 @@ function renderMoon(d, hilo) {
     <div class="range-block"><div class="range-label">Tidal range</div><div class="range-val">${range}</div></div>`;
 }
 
+// ── Render: Conditions ────────────────────────────────────────────────────────
 async function renderConditions(stationId, dateStr) {
   const el = document.getElementById('condGrid');
   if (!SENSOR_STATIONS.has(stationId)) {
@@ -334,6 +580,7 @@ async function renderConditions(stationId, dateStr) {
   }
 }
 
+// ── Chips ─────────────────────────────────────────────────────────────────────
 function buildChips() {
   document.getElementById('locScroll').innerHTML = LOCATIONS.map((l,i) =>
     `<button class="loc-chip ${i===locIdx?'active':''}" onclick="selectLoc(${i})">${l.name}</button>`
@@ -346,6 +593,7 @@ function changeDay(d) {
   dayOffset = n; render();
 }
 
+// ── Main render ───────────────────────────────────────────────────────────────
 async function render() {
   const d = getDate(dayOffset);
   const fmt = fmtDisplay(d);
@@ -361,6 +609,9 @@ async function render() {
   // Loading states
   document.getElementById('chartWrap').innerHTML = '<div class="status-box"><div class="spinner"></div><div class="status-msg">Fetching NOAA data…</div></div>';
   document.getElementById('tideEvents').innerHTML = '<div class="tide-card" style="opacity:0.3;grid-column:span 2;text-align:center;padding:1.5rem;font-size:13px;color:var(--muted);">Loading…</div>';
+
+  if (!isToday()) document.getElementById('currentTideWrap').innerHTML = '';
+
   renderMoon(d, null);
   renderConditions(loc.id, dateStr);
 
@@ -369,6 +620,8 @@ async function render() {
     renderChart(hourly);
     renderEvents(hilo);
     renderMoon(d, hilo);
+    // Current panel uses its own 6-min fetch, pass hilo for next event
+    if (isToday()) renderCurrentPanel(loc.id, hilo);
   } catch (err) {
     document.getElementById('chartWrap').innerHTML =
       `<div class="status-box"><div class="error-msg">⚠ Could not reach NOAA.<br>${err.message}<br><small>Internet connection required for live data.</small></div></div>`;
