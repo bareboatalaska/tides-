@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SE Alaska Tides</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --navy: #0a1628; --navy-mid: #122040;
+    --tide-blue: #4a9eda; --tide-bright: #6ab8f0;
+    --gold: #c8a96e; --gold-light: #e2c98a;
+    --cream: #f0ebe0; --cream-dim: #b8b09a; --muted: #6a7d94;
+    --card-bg: rgba(18,32,64,0.75); --border: rgba(74,158,218,0.18);
+    --border-gold: rgba(200,169,110,0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--cream); min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(42,74,107,0.6) 0%, transparent 70%),
+      linear-gradient(180deg, #0a1628 0%, #0d1e38 40%, #091525 100%);
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(74,158,218,0.025) 60px, rgba(74,158,218,0.025) 61px);
+  }
+  .app { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; padding: 0 0 3rem; }
+
+  .header { padding: 2rem 1.5rem 1.25rem; border-bottom: 0.5px solid var(--border-gold); margin-bottom: 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; }
+  .title-block h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 500; color: var(--cream); line-height: 1.1; }
+  .title-block .region { font-size: 11px; color: var(--gold); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; font-weight: 300; }
+  .compass { width: 44px; height: 44px; border: 0.5px solid var(--border-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(200,169,110,0.06); flex-shrink: 0; }
+
+  .loc-section { padding: 0 1.5rem; margin-bottom: 1.25rem; }
+  .section-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .loc-scroll { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .loc-scroll::-webkit-scrollbar { display: none; }
+  .loc-chip { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--card-bg); cursor: pointer; font-size: 12.5px; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all 0.2s; white-space: nowrap; backdrop-filter: blur(8px); }
+  .loc-chip:hover { border-color: var(--tide-blue); color: var(--tide-bright); }
+  .loc-chip.active { background: rgba(74,158,218,0.14); border-color: var(--tide-blue); color: var(--tide-bright); font-weight: 500; }
+
+  .date-nav { margin: 0 1.5rem 1.25rem; display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 14px; padding: 0.9rem 1rem; backdrop-filter: blur(10px); }
+  .nav-btn { background: none; border: 0.5px solid var(--border); color: var(--muted); cursor: pointer; width: 32px; height: 32px; border-radius: 50%; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .nav-btn:hover:not(:disabled) { border-color: var(--tide-blue); color: var(--tide-bright); }
+  .nav-btn:disabled { opacity: 0.2; cursor: default; }
+  .date-center { text-align: center; }
+  .date-center .dayname { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+  .date-center .datestr { font-family: 'Playfair Display', serif; font-size: 17px; color: var(--cream); margin-top: 2px; }
+
+  .chart-card { margin: 0 1.5rem 1.25rem; background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 16px; padding: 1.1rem 1rem 0.75rem; backdrop-filter: blur(10px); }
+  .chart-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; flex-wrap: wrap; gap: 4px; }
+  .chart-loc { font-size: 13px; font-weight: 500; color: var(--cream); }
+  .chart-sub { font-size: 11px; color: var(--muted); }
+  .chart-wrap { position: relative; height: 150px; }
+
+  .status-box { display: flex; align-items: center; justify-content: center; height: 150px; flex-direction: column; gap: 10px; }
+  .spinner { width: 28px; height: 28px; border: 2px solid rgba(74,158,218,0.2); border-top-color: var(--tide-blue); border-radius: 50%; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-msg { font-size: 12px; color: var(--muted); }
+  .error-msg { font-size: 12px; color: #e07a7a; text-align: center; padding: 0 1rem; line-height: 1.6; }
+
+  .events-grid { margin: 0 1.5rem 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tide-card { background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 14px; padding: 1rem; backdrop-filter: blur(10px); }
+  .tide-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; }
+  .high-badge { background: rgba(74,158,218,0.15); color: var(--tide-bright); border: 0.5px solid rgba(74,158,218,0.3); }
+  .low-badge { background: rgba(200,169,110,0.12); color: var(--gold-light); border: 0.5px solid rgba(200,169,110,0.25); }
+  .tide-time { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--cream); line-height: 1; }
+  .tide-ht { font-size: 13px; color: var(--muted); margin-top: 5px; }
+  .tide-ht strong { color: var(--cream-dim); font-weight: 500; }
+
+  .moon-card { margin: 0 1.5rem 1.25rem; background: var(--card-bg); border: 0.5px solid var(--border-gold); border-radius: 14px; padding: 0.9rem 1rem; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(10px); }
+  .moon-glyph { font-size: 26px; line-height: 1; }
+  .moon-details { flex: 1; }
+  .moon-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .moon-phase { font-size: 14px; color: var(--gold-light); font-weight: 500; margin-top: 1px; }
+  .range-block { text-align: right; }
+  .range-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .range-val { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--cream); margin-top: 1px; }
+
+  .cond-grid { margin: 0 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .cond-card { background: var(--card-bg); border: 0.5px solid var(--border); border-radius: 12px; padding: 0.85rem 0.75rem; text-align: center; backdrop-filter: blur(10px); }
+  .cond-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .cond-val { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--cream); line-height: 1; }
+  .cond-unit { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  .noaa-badge { margin: 1.25rem 1.5rem 0; display: flex; align-items: center; gap: 8px; padding: 0.6rem 0.9rem; background: rgba(74,158,218,0.07); border: 0.5px solid rgba(74,158,218,0.2); border-radius: 10px; }
+  .noaa-badge span { font-size: 11px; color: var(--muted); }
+  .noaa-badge a { color: var(--tide-blue); text-decoration: none; }
+  .noaa-badge a:hover { text-decoration: underline; }
+  .app-footer { text-align: center; padding: 1.5rem 1.5rem 0; font-size: 11px; color: var(--muted); opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="title-block">
+      <h1>Tide Forecast</h1>
+      <div class="region">Southeast Alaska · Inside Passage</div>
+    </div>
+    <div class="compass">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#c8a96e" stroke-width="0.8" opacity="0.5"/>
+        <path d="M12 4l2 6H10l2-6z" fill="#c8a96e" opacity="0.9"/>
+        <path d="M12 20l-2-6h4l-2 6z" fill="#6a7d94" opacity="0.6"/>
+        <circle cx="12" cy="12" r="1.5" fill="#c8a96e"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="loc-section">
+    <div class="section-label">Port</div>
+    <div class="loc-scroll" id="locScroll"></div>
+  </div>
+
+  <div class="date-nav">
+    <button class="nav-btn" id="prevDay" onclick="changeDay(-1)">&#8592;</button>
+    <div class="date-center">
+      <div class="dayname" id="dayName"></div>
+      <div class="datestr" id="dateStr"></div>
+    </div>
+    <button class="nav-btn" id="nextDay" onclick="changeDay(1)">&#8594;</button>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-meta">
+      <span class="chart-loc" id="chartLoc"></span>
+      <span class="chart-sub">MLLW (ft) · NOAA Official</span>
+    </div>
+    <div class="chart-wrap" id="chartWrap">
+      <div class="status-box"><div class="spinner"></div><div class="status-msg">Loading tide data…</div></div>
+    </div>
+  </div>
+
+  <div class="events-grid" id="tideEvents">
+    <div class="tide-card" style="opacity:0.3;grid-column:span 2;text-align:center;padding:1.5rem;font-size:13px;">Loading…</div>
+  </div>
+
+  <div class="moon-card" id="moonCard">
+    <div class="moon-glyph">🌊</div>
+    <div class="moon-details"><div class="moon-label">Moon phase</div><div class="moon-phase">Loading…</div></div>
+  </div>
+
+  <div class="cond-grid" id="condGrid">
+    <div class="cond-card" style="grid-column:span 3;text-align:center;opacity:0.4;font-size:12px;color:var(--muted);">Loading conditions…</div>
+  </div>
+
+  <div class="noaa-badge">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a9eda" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    <span>Live predictions from <a href="https://tidesandcurrents.noaa.gov" target="_blank">NOAA Tides &amp; Currents</a> · Official US government data</span>
+  </div>
+  <div class="app-footer">For navigation always cross-check official NOAA tide tables</div>
+</div>
+
+<script>
+// Official NOAA station IDs — SE Alaska
+const LOCATIONS = [
+  { name: 'Juneau',      note: 'Gastineau Channel',  id: '9452210' },
+  { name: 'Ketchikan',   note: 'Tongass Narrows',    id: '9450460' },
+  { name: 'Sitka',       note: 'Sitka Sound',        id: '9451600' },
+  { name: 'Petersburg',  note: 'Mitkof Island',      id: '9451439' },
+  { name: 'Wrangell',    note: 'Wrangell Narrows',   id: '9451204' },
+  { name: 'Skagway',     note: 'Taiya Inlet',        id: '9452400' },
+  { name: 'Haines',      note: 'Lynn Canal',         id: '9452435' },
+  { name: 'Hoonah',      note: 'Port Frederick',     id: '9452438' },
+  { name: 'Metlakatla',  note: 'Annette Island',     id: '9450314' },
+];
+
+// Stations with live sensor data on NOAA
+const SENSOR_STATIONS = new Set(['9452210','9450460','9451600','9451439']);
+
+const MOON_NAMES  = ['New moon','Waxing crescent','First quarter','Waxing gibbous','Full moon','Waning gibbous','Last quarter','Waning crescent'];
+const MOON_GLYPHS = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
+
+let dayOffset = 0, locIdx = 0, tideChart = null;
+const cache = {};
+
+function getDate(off) { const d = new Date(); d.setDate(d.getDate() + off); return d; }
+
+function fmtNoaa(d) {
+  return d.getFullYear() +
+    String(d.getMonth()+1).padStart(2,'0') +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function fmtDisplay(d) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return { day: days[d.getDay()], str: months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() };
+}
+
+function getMoonPhase(d) {
+  const knownNew = new Date(2025, 0, 29); // Jan 29 2025 new moon
+  const days = (d - knownNew) / 86400000;
+  const idx = Math.floor(((days % 29.53) + 29.53) % 29.53 / (29.53/8)) % 8;
+  return { name: MOON_NAMES[idx], glyph: MOON_GLYPHS[idx] };
+}
+
+async function noaaFetch(stationId, dateStr, interval) {
+  const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter' +
+    '?begin_date=' + dateStr + '&end_date=' + dateStr +
+    '&station=' + stationId +
+    '&product=predictions&datum=MLLW&time_zone=lst_ldt' +
+    '&interval=' + interval + '&units=english' +
+    '&application=sea_tides_app&format=json';
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  if (j.error) throw new Error(j.error.message || 'NOAA API error');
+  return j.predictions || [];
+}
+
+async function noaaMetFetch(stationId, dateStr, product) {
+  const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter' +
+    '?begin_date=' + dateStr + '&end_date=' + dateStr +
+    '&station=' + stationId +
+    '&product=' + product + '&time_zone=lst_ldt' +
+    '&units=english&application=sea_tides_app&format=json';
+  const r = await fetch(url);
+  const j = await r.json();
+  return j.data || null;
+}
+
+async function loadTides(stationId, dateStr) {
+  const key = stationId + '_' + dateStr;
+  if (cache[key]) return cache[key];
+  const [hilo, hourly] = await Promise.all([
+    noaaFetch(stationId, dateStr, 'hilo'),
+    noaaFetch(stationId, dateStr, 'h'),
+  ]);
+  cache[key] = { hilo, hourly };
+  return cache[key];
+}
+
+function fmtTime(t) {
+  // "2026-04-26 06:42"
+  const [hStr, mStr] = t.split(' ')[1].split(':');
+  let h = parseInt(hStr);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return h + ':' + mStr + '\u202f' + ampm;
+}
+
+function renderChart(hourly) {
+  const wrap = document.getElementById('chartWrap');
+  if (!hourly || !hourly.length) {
+    wrap.innerHTML = '<div class="status-box"><div class="error-msg">No hourly data for this date.</div></div>';
+    return;
+  }
+  if (!wrap.querySelector('canvas')) {
+    wrap.innerHTML = '<canvas id="tideChart" role="img" aria-label="NOAA tide height chart"></canvas>';
+  }
+  const labels = hourly.map(p => {
+    const h = parseInt(p.t.split(' ')[1]);
+    if (h === 0) return '12am'; if (h === 12) return '12pm';
+    return h < 12 ? h + 'am' : (h-12) + 'pm';
+  });
+  const heights = hourly.map(p => parseFloat(p.v));
+  const ctx = document.getElementById('tideChart').getContext('2d');
+  if (tideChart) { tideChart.destroy(); tideChart = null; }
+  const grad = ctx.createLinearGradient(0,0,0,150);
+  grad.addColorStop(0,'rgba(74,158,218,0.28)');
+  grad.addColorStop(1,'rgba(74,158,218,0.01)');
+  tideChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ data: heights, borderColor: '#4a9eda', backgroundColor: grad, borderWidth: 2, tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#6ab8f0', pointHoverBorderColor: '#fff', pointHoverBorderWidth: 1.5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,22,40,0.92)', titleColor: '#6a7d94', bodyColor: '#f0ebe0', borderColor: 'rgba(74,158,218,0.3)', borderWidth: 0.5, padding: 10, callbacks: { label: c => c.parsed.y.toFixed(1) + ' ft MLLW', title: l => l[0]||'' } } },
+      scales: {
+        x: { ticks: { font:{size:10,family:'DM Sans'}, color:'#4a6070', maxRotation:0, autoSkip:true, maxTicksLimit:8 }, grid:{display:false}, border:{display:false} },
+        y: { ticks: { font:{size:10,family:'DM Sans'}, color:'#4a6070', callback: v => v.toFixed(0)+'ft' }, grid:{color:'rgba(74,158,218,0.07)'}, border:{display:false} }
+      }
+    }
+  });
+}
+
+function renderEvents(hilo) {
+  if (!hilo || !hilo.length) {
+    document.getElementById('tideEvents').innerHTML = '<div style="grid-column:span 2;text-align:center;padding:1.5rem;font-size:13px;color:var(--muted);">No tide events found.</div>';
+    return;
+  }
+  document.getElementById('tideEvents').innerHTML = hilo.map(e => {
+    const isH = e.type === 'H';
+    return `<div class="tide-card">
+      <div class="tide-badge ${isH?'high-badge':'low-badge'}">
+        <svg width="9" height="9" viewBox="0 0 10 10"><path d="${isH?'M5 9V1M2 4l3-3 3 3':'M5 1v8M2 6l3 3 3-3'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        ${isH ? 'High' : 'Low'} tide
+      </div>
+      <div class="tide-time">${fmtTime(e.t)}</div>
+      <div class="tide-ht"><strong>${parseFloat(e.v).toFixed(1)} ft</strong> MLLW</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMoon(d, hilo) {
+  const mp = getMoonPhase(d);
+  let range = '–';
+  if (hilo && hilo.length >= 2) {
+    const vals = hilo.map(e => parseFloat(e.v));
+    range = (Math.max(...vals) - Math.min(...vals)).toFixed(1) + ' ft';
+  }
+  document.getElementById('moonCard').innerHTML = `
+    <div class="moon-glyph">${mp.glyph}</div>
+    <div class="moon-details"><div class="moon-label">Moon phase</div><div class="moon-phase">${mp.name}</div></div>
+    <div class="range-block"><div class="range-label">Tidal range</div><div class="range-val">${range}</div></div>`;
+}
+
+async function renderConditions(stationId, dateStr) {
+  const el = document.getElementById('condGrid');
+  if (!SENSOR_STATIONS.has(stationId)) {
+    el.innerHTML = `<div class="cond-card" style="grid-column:span 3;text-align:center;">
+      <div class="cond-label" style="margin-bottom:8px;">Marine conditions</div>
+      <div style="font-size:12px;color:var(--muted);">Live sensor not available at this station.<br><a href="https://tidesandcurrents.noaa.gov/map/" target="_blank" style="color:var(--tide-blue);">View NOAA station map</a></div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="cond-card" style="grid-column:span 3;text-align:center;"><div class="spinner" style="margin:0 auto;"></div></div>`;
+  try {
+    const [wtData, windData] = await Promise.all([
+      noaaMetFetch(stationId, dateStr, 'water_temperature'),
+      noaaMetFetch(stationId, dateStr, 'wind'),
+    ]);
+    const wt = wtData ? parseFloat(wtData[0].v).toFixed(0) + '°F' : '–';
+    const windSpd = windData ? parseFloat(windData[0].s).toFixed(0) : '–';
+    const windDir = windData ? (windData[0].dr || '–') : '–';
+    el.innerHTML = `
+      <div class="cond-card"><div class="cond-label">Water temp</div><div class="cond-val">${wt}</div></div>
+      <div class="cond-card"><div class="cond-label">Wind speed</div><div class="cond-val" style="font-size:16px;">${windSpd}<span style="font-size:10px;color:var(--muted);"> kt</span></div></div>
+      <div class="cond-card"><div class="cond-label">Wind dir</div><div class="cond-val" style="font-size:16px;">${windDir}</div></div>`;
+  } catch {
+    el.innerHTML = `<div class="cond-card" style="grid-column:span 3;text-align:center;font-size:12px;color:var(--muted);padding:0.5rem;">Conditions data unavailable right now.</div>`;
+  }
+}
+
+function buildChips() {
+  document.getElementById('locScroll').innerHTML = LOCATIONS.map((l,i) =>
+    `<button class="loc-chip ${i===locIdx?'active':''}" onclick="selectLoc(${i})">${l.name}</button>`
+  ).join('');
+}
+function selectLoc(i) { locIdx = i; buildChips(); render(); }
+function changeDay(d) {
+  const n = dayOffset + d;
+  if (n < -3 || n > 10) return;
+  dayOffset = n; render();
+}
+
+async function render() {
+  const d = getDate(dayOffset);
+  const fmt = fmtDisplay(d);
+  document.getElementById('dayName').textContent = fmt.day;
+  document.getElementById('dateStr').textContent = fmt.str;
+  document.getElementById('prevDay').disabled = dayOffset <= -3;
+  document.getElementById('nextDay').disabled = dayOffset >= 10;
+
+  const loc = LOCATIONS[locIdx];
+  const dateStr = fmtNoaa(d);
+  document.getElementById('chartLoc').textContent = loc.name + ' · ' + loc.note;
+
+  // Loading states
+  document.getElementById('chartWrap').innerHTML = '<div class="status-box"><div class="spinner"></div><div class="status-msg">Fetching NOAA data…</div></div>';
+  document.getElementById('tideEvents').innerHTML = '<div class="tide-card" style="opacity:0.3;grid-column:span 2;text-align:center;padding:1.5rem;font-size:13px;color:var(--muted);">Loading…</div>';
+  renderMoon(d, null);
+  renderConditions(loc.id, dateStr);
+
+  try {
+    const { hilo, hourly } = await loadTides(loc.id, dateStr);
+    renderChart(hourly);
+    renderEvents(hilo);
+    renderMoon(d, hilo);
+  } catch (err) {
+    document.getElementById('chartWrap').innerHTML =
+      `<div class="status-box"><div class="error-msg">⚠ Could not reach NOAA.<br>${err.message}<br><small>Internet connection required for live data.</small></div></div>`;
+    document.getElementById('tideEvents').innerHTML =
+      '<div class="tide-card" style="grid-column:span 2;text-align:center;padding:1.5rem;font-size:13px;color:#e07a7a;">Data unavailable — check connection</div>';
+  }
+}
+
+buildChips();
+render();
+</script>
+</body>
+</html>
